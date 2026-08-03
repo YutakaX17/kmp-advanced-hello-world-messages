@@ -25,7 +25,7 @@ jobs:
           repository: YutakaX17/kmp-advanced-hello-world-core
           ref: feature/bootstrap-kmp-core
           path: kmp-advanced-hello-world-core
-      - uses: actions/setup-java@a7f4426b6498c6659b8b0c496da8adf5a2ef1b2d # v4
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
         with:
           distribution: temurin
           java-version: "21"
