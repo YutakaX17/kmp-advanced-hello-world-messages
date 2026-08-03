@@ -2,6 +2,7 @@
 kotlin = "2.4.10"
 sqldelight = "2.3.2"
 kmpCore = "0.1.0-SNAPSHOT"
+agp = "9.2.0"
 
 [libraries]
 advanced-hello-world-kmp-core = { module = "io.github.yutakax17.advancedhelloworld:kmp-advanced-hello-world-core", version.ref = "kmpCore" }
@@ -9,3 +10,4 @@ advanced-hello-world-kmp-core = { module = "io.github.yutakax17.advancedhellowor
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
+android-kmp-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }

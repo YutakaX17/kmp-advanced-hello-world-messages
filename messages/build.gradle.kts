@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.android.kmp.library)
     `maven-publish`
 }
 
@@ -10,6 +11,11 @@ version = rootProject.version
 kotlin {
     explicitApi()
     jvm()
+    android {
+        namespace = "io.github.yutakax17.advancedhelloworld.messages"
+        compileSdk = 37
+        minSdk = 24
+    }
 
     sourceSets {
         commonMain.dependencies {
