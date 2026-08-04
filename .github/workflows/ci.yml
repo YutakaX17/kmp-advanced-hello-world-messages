@@ -43,6 +43,15 @@ jobs:
           spotlessCheck detekt apiCheck buildHealth
           check assemble publishAllPublicationsToLocalRepository
         working-directory: kmp-advanced-hello-world-messages
+      - name: Validate MIT publication metadata
+        working-directory: kmp-advanced-hello-world-messages
+        run: |
+          mapfile -t poms < <(find messages -path '*/publications/*/pom-default.xml')
+          test "${#poms[@]}" -gt 0
+          for pom in "${poms[@]}"; do
+            grep -q '<name>MIT License</name>' "$pom"
+            grep -q '<url>https://opensource.org/license/mit</url>' "$pom"
+          done
       - name: Resolve publication from clean consumer
         run: ./gradlew --no-daemon -p consumer-fixture clean test
         working-directory: kmp-advanced-hello-world-messages
