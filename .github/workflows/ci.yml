@@ -33,7 +33,7 @@ jobs:
         with:
           validate-wrappers: true
       - name: Install immutable core dependency
-        run: ./gradlew --no-daemon -PreleaseVersion=0.1.0 publishToMavenLocal
+        run: ./gradlew --no-daemon -PreleaseVersion=0.1.0 :core:publishToMavenLocal
         working-directory: kmp-advanced-hello-world-core
       - name: Quality, migrations, tests, API, dependencies, and publications
         run: >
