@@ -56,6 +56,14 @@ dependencyAnalysis {
             onAny {
                 severity("fail")
             }
+            onUsedTransitiveDependencies {
+                // The commonMain API declaration resolves to this published
+                // Android variant; declaring the variant separately would
+                // break the KMP dependency boundary.
+                exclude(
+                    "io.github.yutakax17.advancedhelloworld:core-android",
+                )
+            }
         }
     }
 }
