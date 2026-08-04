@@ -1,13 +1,32 @@
 [versions]
 kotlin = "2.4.10"
 sqldelight = "2.3.2"
-kmpCore = "0.1.0-SNAPSHOT"
+kmpCore = "0.1.0"
 agp = "9.2.0"
+coroutines = "1.10.2"
+serializationJson = "1.9.0"
+spotless = "8.8.0"
+detekt = "1.23.8"
+binary-compatibility = "0.18.1"
+dependency-analysis = "3.17.0"
+dependency-check = "12.2.2"
+licensee = "1.14.1"
 
 [libraries]
 advanced-hello-world-kmp-core = { module = "io.github.yutakax17.advancedhelloworld:kmp-advanced-hello-world-core", version.ref = "kmpCore" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serializationJson" }
+sqldelight-coroutines-extensions = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
+sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 android-kmp-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+binary-compatibility = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binary-compatibility" }
+dependency-analysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependency-analysis" }
+dependency-check = { id = "org.owasp.dependencycheck", version.ref = "dependency-check" }
+licensee = { id = "app.cash.licensee", version.ref = "licensee" }

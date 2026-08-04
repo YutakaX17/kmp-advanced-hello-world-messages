@@ -19,11 +19,15 @@ public data class Message(
 )
 
 public sealed interface MessageValidation {
-    public data class Valid(public val normalizedText: String) : MessageValidation
+    public data class Valid(
+        public val normalizedText: String,
+    ) : MessageValidation
 
     public data object Blank : MessageValidation
 
-    public data class TooLong(public val maximumLength: Int) : MessageValidation
+    public data class TooLong(
+        public val maximumLength: Int,
+    ) : MessageValidation
 }
 
 public fun validateMessageText(text: String): MessageValidation {

@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  security-events: write
 
 jobs:
   dependency-review:
@@ -31,3 +32,93 @@ jobs:
           scan-ref: .
           severity: HIGH,CRITICAL
           exit-code: "1"
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: kmp-advanced-hello-world-messages
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: YutakaX17/kmp-advanced-hello-world-core
+          ref: 5320b382a4d049bcfca7ae673eeace6cbafc4e9f
+          path: kmp-advanced-hello-world-core
+      - uses: github/codeql-action/init@0b88f91c1c313eec6a3c4ee6b8342cb564c2060c # v4
+        with:
+          languages: java-kotlin
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+        with:
+          validate-wrappers: true
+      - name: Install immutable core dependency
+        run: ./gradlew --no-daemon -PreleaseVersion=0.1.0 publishToMavenLocal
+        working-directory: kmp-advanced-hello-world-core
+      - name: Build JVM target for CodeQL
+        run: ./gradlew --no-daemon :messages:compileKotlinJvm
+        working-directory: kmp-advanced-hello-world-messages
+      - uses: github/codeql-action/analyze@0b88f91c1c313eec6a3c4ee6b8342cb564c2060c # v4
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: env.NVD_API_KEY != ''
+        with:
+          repository: YutakaX17/kmp-advanced-hello-world-core
+          ref: 5320b382a4d049bcfca7ae673eeace6cbafc4e9f
+          path: immutable-kmp-core
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+        with:
+          validate-wrappers: true
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        if: env.NVD_API_KEY != ''
+        with:
+          path: ~/.gradle/dependency-check-data
+          key: dependency-check-v12-${{ runner.os }}
+      - name: Explain unavailable NVD audit
+        if: env.NVD_API_KEY == ''
+        run: echo "::warning::Set the NVD_API_KEY repository secret to enable the cached OWASP Gradle vulnerability audit."
+      - name: Install immutable core dependency
+        if: env.NVD_API_KEY != ''
+        run: ./immutable-kmp-core/gradlew --no-daemon -p immutable-kmp-core -PreleaseVersion=0.1.0 publishToMavenLocal
+      - run: ./gradlew --no-daemon dependencyCheckAnalyze
+        if: env.NVD_API_KEY != ''
+      - uses: github/codeql-action/upload-sarif@0b88f91c1c313eec6a3c4ee6b8342cb564c2060c # v4
+        if: always() && env.NVD_API_KEY != ''
+        with:
+          sarif_file: build/reports/dependency-check-report.sarif
+
+  dependency-submission:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: YutakaX17/kmp-advanced-hello-world-core
+          ref: 5320b382a4d049bcfca7ae673eeace6cbafc4e9f
+          path: immutable-kmp-core
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install immutable core dependency
+        run: ./immutable-kmp-core/gradlew --no-daemon -p immutable-kmp-core -PreleaseVersion=0.1.0 publishToMavenLocal
+      - uses: gradle/actions/dependency-submission@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4

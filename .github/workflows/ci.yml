@@ -23,12 +23,24 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: YutakaX17/kmp-advanced-hello-world-core
-          ref: feature/bootstrap-kmp-core
+          ref: 5320b382a4d049bcfca7ae673eeace6cbafc4e9f
           path: kmp-advanced-hello-world-core
       - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
         with:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@06832c7b30a0129d7fb559bcc6e43d26f6374244 # v4
-      - run: ./gradlew --no-daemon check assemble publishAllPublicationsToLocalRepository
+        with:
+          validate-wrappers: true
+      - name: Install immutable core dependency
+        run: ./gradlew --no-daemon -PreleaseVersion=0.1.0 publishToMavenLocal
+        working-directory: kmp-advanced-hello-world-core
+      - name: Quality, migrations, tests, API, dependencies, and publications
+        run: >
+          ./gradlew --no-daemon
+          spotlessCheck detekt apiCheck buildHealth
+          check assemble publishAllPublicationsToLocalRepository
+        working-directory: kmp-advanced-hello-world-messages
+      - name: Resolve publication from clean consumer
+        run: ./gradlew --no-daemon -p consumer-fixture clean test
         working-directory: kmp-advanced-hello-world-messages
