@@ -48,6 +48,7 @@ dependencyCheck {
     formats = listOf("HTML", "SARIF")
     suppressionFile = "config/dependency-check-suppressions.xml"
     nvd.apiKey = providers.environmentVariable("NVD_API_KEY").orNull
+    nvd.datafeedUrl = "https://nvd.nist.gov/feeds/json/cve/2.0/nvdcve-2.0-{0}.json.gz"
     nvd.delay = 6_000
     nvd.resultsPerPage = 2_000
     nvd.maxRetryCount = 10
