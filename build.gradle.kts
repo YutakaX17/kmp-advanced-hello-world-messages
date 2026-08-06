@@ -48,6 +48,10 @@ dependencyCheck {
     formats = listOf("HTML", "SARIF")
     suppressionFile = "config/dependency-check-suppressions.xml"
     nvd.apiKey = providers.environmentVariable("NVD_API_KEY").orNull
+    nvd.delay = 6_000
+    nvd.resultsPerPage = 2_000
+    nvd.maxRetryCount = 10
+    nvd.validForHours = 4
 }
 
 dependencyAnalysis {
