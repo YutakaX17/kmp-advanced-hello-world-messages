@@ -126,4 +126,4 @@ jobs:
         run: |
           ./immutable-kmp-core/gradlew --no-daemon -p immutable-kmp-core -PreleaseVersion=0.1.0 :core:publishToMavenLocal ||
             ./immutable-kmp-core/gradlew --no-daemon --refresh-dependencies -p immutable-kmp-core -PreleaseVersion=0.1.0 :core:publishToMavenLocal
-      - uses: gradle/actions/dependency-submission@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+      - uses: gradle/actions/dependency-submission@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
