@@ -9,7 +9,7 @@ spotless = "8.8.0"
 detekt = "1.23.8"
 binary-compatibility = "0.18.1"
 dependency-analysis = "3.17.0"
-dependency-check = "12.2.2"
+dependency-check = "13.0.0"
 licensee = "1.14.1"
 
 [libraries]
