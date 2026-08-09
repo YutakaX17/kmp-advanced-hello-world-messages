@@ -1,0 +1,7 @@
+complexity:
+  LongParameterList:
+    active: false
+
+style:
+  MagicNumber:
+    active: false

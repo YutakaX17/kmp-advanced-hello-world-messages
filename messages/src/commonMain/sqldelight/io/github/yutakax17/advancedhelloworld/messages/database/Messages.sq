@@ -1,0 +1,142 @@
+CREATE TABLE message (
+    local_id TEXT NOT NULL PRIMARY KEY,
+    remote_id TEXT UNIQUE,
+    text TEXT NOT NULL,
+    created_at_local INTEGER NOT NULL,
+    created_at_server TEXT,
+    sync_state TEXT NOT NULL,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    last_error TEXT,
+    timeline_at INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX message_remote_id ON message(remote_id);
+CREATE INDEX message_created_at ON message(timeline_at DESC, local_id);
+
+CREATE TABLE message_outbox (
+    operation_id TEXT NOT NULL PRIMARY KEY,
+    entity_local_id TEXT NOT NULL,
+    operation_type TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    state TEXT NOT NULL,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    next_attempt_at INTEGER,
+    created_at INTEGER NOT NULL,
+    FOREIGN KEY (entity_local_id) REFERENCES message(local_id) ON DELETE CASCADE
+);
+
+CREATE INDEX message_outbox_ready
+ON message_outbox(state, next_attempt_at, created_at);
+
+CREATE TABLE message_sync_metadata (
+    id INTEGER NOT NULL PRIMARY KEY CHECK (id = 1),
+    pull_cursor TEXT,
+    last_successful_sync_at INTEGER
+);
+
+selectAll:
+SELECT *
+FROM message
+ORDER BY timeline_at DESC, local_id;
+
+insertPending:
+INSERT INTO message(
+    local_id,
+    remote_id,
+    text,
+    created_at_local,
+    created_at_server,
+    sync_state,
+    attempt_count,
+    last_error,
+    timeline_at
+)
+VALUES (?, NULL, ?, ?, NULL, 'PENDING', 0, NULL, ?);
+
+enqueueCreate:
+INSERT INTO message_outbox(
+    operation_id,
+    entity_local_id,
+    operation_type,
+    payload,
+    state,
+    attempt_count,
+    next_attempt_at,
+    created_at
+)
+VALUES (?, ?, 'CREATE', ?, 'PENDING', 0, NULL, ?);
+
+selectReadyOutbox:
+SELECT *
+FROM message_outbox
+WHERE state = 'PENDING'
+  AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
+ORDER BY created_at, operation_id;
+
+markSyncing:
+UPDATE message
+SET sync_state = 'SYNCING',
+    last_error = NULL
+WHERE local_id = ?;
+
+markSynced:
+UPDATE message
+SET remote_id = ?,
+    created_at_server = ?,
+    timeline_at = ?,
+    sync_state = 'SYNCED',
+    last_error = NULL
+WHERE local_id = ?;
+
+deleteOutboxOperation:
+DELETE FROM message_outbox
+WHERE operation_id = ?;
+
+recordRetry:
+UPDATE message_outbox
+SET state = 'PENDING',
+    attempt_count = attempt_count + 1,
+    next_attempt_at = ?
+WHERE operation_id = ?;
+
+markPermanentFailure:
+UPDATE message
+SET sync_state = 'FAILED_PERMANENT',
+    last_error = ?
+WHERE local_id = ?;
+
+insertRemoteIfAbsent:
+INSERT OR IGNORE INTO message(
+    local_id,
+    remote_id,
+    text,
+    created_at_local,
+    created_at_server,
+    sync_state,
+    attempt_count,
+    last_error,
+    timeline_at
+)
+VALUES (?, ?, ?, ?, ?, 'SYNCED', 0, NULL, ?);
+
+updateRemote:
+UPDATE message
+SET text = ?,
+    created_at_server = ?,
+    timeline_at = ?,
+    sync_state = 'SYNCED',
+    last_error = NULL
+WHERE remote_id = ?;
+
+saveCursor:
+INSERT OR REPLACE INTO message_sync_metadata(id, pull_cursor, last_successful_sync_at)
+VALUES (1, ?, ?);
+
+getSyncMetadata:
+SELECT * FROM message_sync_metadata WHERE id = 1;
+
+countMessages:
+SELECT count(*) FROM message;
+
+countOutbox:
+SELECT count(*) FROM message_outbox;

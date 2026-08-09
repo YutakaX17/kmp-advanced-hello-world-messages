@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: kmp-advanced-hello-world-messages
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: YutakaX17/kmp-advanced-hello-world-core
+          ref: 5320b382a4d049bcfca7ae673eeace6cbafc4e9f
+          path: kmp-advanced-hello-world-core
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@06832c7b30a0129d7fb559bcc6e43d26f6374244 # v4
+        with:
+          validate-wrappers: true
+      - name: Install immutable core dependency
+        run: |
+          ./gradlew --no-daemon -PreleaseVersion=0.1.0 :core:publishToMavenLocal ||
+            ./gradlew --no-daemon --refresh-dependencies -PreleaseVersion=0.1.0 :core:publishToMavenLocal
+        working-directory: kmp-advanced-hello-world-core
+      - name: Quality, migrations, tests, API, dependencies, and publications
+        run: >
+          ./gradlew --no-daemon
+          spotlessCheck detekt apiCheck buildHealth
+          check assemble publishAllPublicationsToLocalRepository
+        working-directory: kmp-advanced-hello-world-messages
+      - name: Validate MIT publication metadata
+        working-directory: kmp-advanced-hello-world-messages
+        run: |
+          mapfile -t poms < <(find messages -path '*/publications/*/pom-default.xml')
+          test "${#poms[@]}" -gt 0
+          for pom in "${poms[@]}"; do
+            grep -q '<name>MIT License</name>' "$pom"
+            grep -q '<url>https://opensource.org/license/mit</url>' "$pom"
+          done
+      - name: Resolve publication from clean consumer
+        run: ./gradlew --no-daemon -p consumer-fixture clean test
+        working-directory: kmp-advanced-hello-world-messages

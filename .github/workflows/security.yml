@@ -1,0 +1,129 @@
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "37 5 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+
+  filesystem:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: kmp-advanced-hello-world-messages
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: YutakaX17/kmp-advanced-hello-world-core
+          ref: 5320b382a4d049bcfca7ae673eeace6cbafc4e9f
+          path: kmp-advanced-hello-world-core
+      - uses: github/codeql-action/init@0b88f91c1c313eec6a3c4ee6b8342cb564c2060c # v4
+        with:
+          languages: java-kotlin
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+        with:
+          validate-wrappers: true
+      - name: Install immutable core dependency
+        run: |
+          ./gradlew --no-daemon -PreleaseVersion=0.1.0 :core:publishToMavenLocal ||
+            ./gradlew --no-daemon --refresh-dependencies -PreleaseVersion=0.1.0 :core:publishToMavenLocal
+        working-directory: kmp-advanced-hello-world-core
+      - name: Build JVM target for CodeQL
+        run: ./gradlew --no-daemon :messages:compileKotlinJvm
+        working-directory: kmp-advanced-hello-world-messages
+      - uses: github/codeql-action/analyze@0b88f91c1c313eec6a3c4ee6b8342cb564c2060c # v4
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Require the NVD API key
+        run: |
+          if [ -z "$NVD_API_KEY" ]; then
+            echo "::error::NVD_API_KEY must be configured; the dependency audit cannot be skipped."
+            exit 1
+          fi
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: YutakaX17/kmp-advanced-hello-world-core
+          ref: 5320b382a4d049bcfca7ae673eeace6cbafc4e9f
+          path: immutable-kmp-core
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+        with:
+          validate-wrappers: true
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.gradle/dependency-check-data
+          key: dependency-check-v12-${{ runner.os }}
+      - name: Install immutable core dependency
+        run: |
+          ./immutable-kmp-core/gradlew --no-daemon -p immutable-kmp-core -PreleaseVersion=0.1.0 :core:publishToMavenLocal ||
+            ./immutable-kmp-core/gradlew --no-daemon --refresh-dependencies -p immutable-kmp-core -PreleaseVersion=0.1.0 :core:publishToMavenLocal
+      - run: ./gradlew --no-daemon --no-configuration-cache dependencyCheckAnalyze
+      - uses: github/codeql-action/upload-sarif@0b88f91c1c313eec6a3c4ee6b8342cb564c2060c # v4
+        if: always() && hashFiles('build/reports/dependency-check-report.sarif') != ''
+        with:
+          sarif_file: build/reports/dependency-check-report.sarif
+
+  dependency-submission:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: YutakaX17/kmp-advanced-hello-world-core
+          ref: 5320b382a4d049bcfca7ae673eeace6cbafc4e9f
+          path: immutable-kmp-core
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install immutable core dependency
+        run: |
+          ./immutable-kmp-core/gradlew --no-daemon -p immutable-kmp-core -PreleaseVersion=0.1.0 :core:publishToMavenLocal ||
+            ./immutable-kmp-core/gradlew --no-daemon --refresh-dependencies -p immutable-kmp-core -PreleaseVersion=0.1.0 :core:publishToMavenLocal
+      - uses: gradle/actions/dependency-submission@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
