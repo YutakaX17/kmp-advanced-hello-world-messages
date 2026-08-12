@@ -9,3 +9,6 @@
 - Add the initial schema snapshot, numbered migration, migration verification,
   persistence/outbox tests, release packaging, and complete quality/security
   gates.
+- Add the Ktor backend adapter and durable synchronization engine with stable
+  idempotency keys, retry classification, paginated pull, cursor persistence,
+  and duplicate-safe reconciliation.

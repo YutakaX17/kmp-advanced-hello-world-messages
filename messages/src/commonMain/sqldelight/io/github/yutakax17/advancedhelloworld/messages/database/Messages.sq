@@ -73,6 +73,9 @@ WHERE state = 'PENDING'
   AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
 ORDER BY created_at, operation_id;
 
+selectMessageByLocalId:
+SELECT * FROM message WHERE local_id = ?;
+
 markSyncing:
 UPDATE message
 SET sync_state = 'SYNCING',
@@ -98,6 +101,13 @@ SET state = 'PENDING',
     attempt_count = attempt_count + 1,
     next_attempt_at = ?
 WHERE operation_id = ?;
+
+markPending:
+UPDATE message
+SET sync_state = 'PENDING',
+    attempt_count = attempt_count + 1,
+    last_error = ?
+WHERE local_id = ?;
 
 markPermanentFailure:
 UPDATE message

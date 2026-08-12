@@ -9,8 +9,14 @@ Messages are ordered by a normalized integer timeline rather than mixed SQLite
 TEXT/INTEGER values.
 
 The committed version-1 schema snapshot and numbered migration are verified
-during `check`. The platform owns the SQLDelight driver; Android driver wiring
-and backend synchronization follow in their ordered implementation slices.
+during `check`. The platform owns the SQLDelight driver and Ktor engine. The
+shared synchronization engine pushes durable outbox operations with stable
+idempotency keys, classifies retryable and permanent failures, pulls remote
+pages transactionally, persists cursors, and reconciles duplicate delivery.
+
+`KtorMessageRemoteDataSource` matches the current backend's full-list
+`GET/POST /api/v1/messages` contract. It exposes that response as a terminal
+page while retaining a cursor-capable boundary for a future incremental API.
 
 ## Build
 
