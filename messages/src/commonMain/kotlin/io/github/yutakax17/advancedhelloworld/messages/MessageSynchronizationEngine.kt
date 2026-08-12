@@ -66,7 +66,11 @@ public class MessageSynchronizationEngine(
                 }
             }
         }
-        return SyncResult.Success
+        return if (database.messagesQueries.countOutbox().executeAsOne() > 0L) {
+            SyncResult.Retry(DEFERRED_OUTBOX_REASON)
+        } else {
+            SyncResult.Success
+        }
     }
 
     @Suppress("ReturnCount")
@@ -146,6 +150,8 @@ public class MessageSynchronizationEngine(
         }
     }
 }
+
+private const val DEFERRED_OUTBOX_REASON: String = "Message outbox contains deferred retry work"
 
 public fun defaultRetryDelayMilliseconds(attempt: Long): Long {
     val exponent = (attempt - 1L).coerceIn(0L, 6L).toInt()

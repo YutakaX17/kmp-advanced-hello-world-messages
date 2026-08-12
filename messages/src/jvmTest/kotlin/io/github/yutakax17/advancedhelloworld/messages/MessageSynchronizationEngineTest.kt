@@ -25,7 +25,11 @@ class MessageSynchronizationEngineTest {
                 fixture.remote.createResults += RemoteResult.Success(remoteMessage("remote-1", "recover me"))
 
                 assertIs<SyncResult.Retry>(fixture.engine.synchronize())
-                fixture.now = 10_000L
+                fixture.now = 4_999L
+                assertIs<SyncResult.Retry>(fixture.engine.synchronize())
+                assertEquals(listOf("operation-id"), fixture.remote.idempotencyKeys)
+
+                fixture.now = 5_000L
                 assertEquals(SyncResult.Success, fixture.engine.synchronize())
 
                 assertEquals(listOf("operation-id", "operation-id"), fixture.remote.idempotencyKeys)
