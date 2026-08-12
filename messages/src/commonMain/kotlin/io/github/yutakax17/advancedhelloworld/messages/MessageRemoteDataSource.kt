@@ -30,9 +30,13 @@ public data class RemoteMessagePage(
 )
 
 public sealed interface RemoteResult<out T> {
-    public data class Success<T>(public val value: T) : RemoteResult<T>
+    public data class Success<T>(
+        public val value: T,
+    ) : RemoteResult<T>
 
-    public data class Failure(public val failure: AppFailure) : RemoteResult<Nothing>
+    public data class Failure(
+        public val failure: AppFailure,
+    ) : RemoteResult<Nothing>
 }
 
 public interface MessageRemoteDataSource {
@@ -56,12 +60,13 @@ public class KtorMessageRemoteDataSource(
         idempotencyKey: String,
     ): RemoteResult<RemoteMessage> =
         requestRemote {
-            client.post(endpoint) {
-                expectSuccess = true
-                contentType(ContentType.Application.Json)
-                header(IDEMPOTENCY_KEY_HEADER, idempotencyKey)
-                setBody(request)
-            }.body()
+            client
+                .post(endpoint) {
+                    expectSuccess = true
+                    contentType(ContentType.Application.Json)
+                    header(IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                    setBody(request)
+                }.body()
         }
 
     override suspend fun listMessages(cursor: String?): RemoteResult<RemoteMessagePage> =

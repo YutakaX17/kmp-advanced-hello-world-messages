@@ -57,11 +57,15 @@ class KtorMessageRemoteDataSourceTest {
         val engine = MockEngine { respond("{}", HttpStatusCode.BadRequest) }
         val remote = KtorMessageRemoteDataSource(testClient(engine), "https://example.test")
 
-        val failure = assertIs<RemoteResult.Failure>(
-            remote.createMessage(CreateRemoteMessage("invalid"), "operation-1"),
-        ).failure
+        val failure =
+            assertIs<RemoteResult.Failure>(
+                remote.createMessage(CreateRemoteMessage("invalid"), "operation-1"),
+            ).failure
 
-        assertEquals(io.github.yutakax17.advancedhelloworld.core.RetryDirective.DO_NOT_RETRY, failure.retryDirective)
+        assertEquals(
+            io.github.yutakax17.advancedhelloworld.core.RetryDirective.DO_NOT_RETRY,
+            failure.retryDirective,
+        )
     }
 }
 

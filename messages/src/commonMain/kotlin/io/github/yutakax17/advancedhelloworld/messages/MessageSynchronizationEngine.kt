@@ -7,7 +7,7 @@ import io.github.yutakax17.advancedhelloworld.core.SyncContributor
 import io.github.yutakax17.advancedhelloworld.core.SyncResult
 import io.github.yutakax17.advancedhelloworld.core.UuidGenerator
 import io.github.yutakax17.advancedhelloworld.messages.database.MessagesDatabase
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 public class MessageSynchronizationEngine(
     private val database: MessagesDatabase,
@@ -29,19 +29,21 @@ public class MessageSynchronizationEngine(
             val message = database.messagesQueries.selectMessageByLocalId(operation.entity_local_id).executeAsOne()
             database.messagesQueries.markSyncing(operation.entity_local_id)
             when (
-                val result = remote.createMessage(
-                    request = CreateRemoteMessage(message.text),
-                    idempotencyKey = operation.operation_id,
-                )
+                val result =
+                    remote.createMessage(
+                        request = CreateRemoteMessage(message.text),
+                        idempotencyKey = operation.operation_id,
+                    )
             ) {
                 is RemoteResult.Success -> {
-                    val timeline = result.value.createdAt.toEpochMillisecondsOrNull()
-                        ?: return handleFailure(
-                            operation.operation_id,
-                            operation.entity_local_id,
-                            operation.attempt_count,
-                            AppFailure.InvalidData("Message backend returned an invalid createdAt value"),
-                        )
+                    val timeline =
+                        result.value.createdAt.toEpochMillisecondsOrNull()
+                            ?: return handleFailure(
+                                operation.operation_id,
+                                operation.entity_local_id,
+                                operation.attempt_count,
+                                AppFailure.InvalidData("Message backend returned an invalid createdAt value"),
+                            )
                     database.transaction {
                         database.messagesQueries.markSynced(
                             remote_id = result.value.id,
@@ -71,10 +73,14 @@ public class MessageSynchronizationEngine(
                 is RemoteResult.Failure -> return result.failure.toSyncResult()
                 is RemoteResult.Success -> {
                     val page = result.value
-                    val mapped = page.messages.map { remoteMessage ->
-                        remoteMessage to (remoteMessage.createdAt.toEpochMillisecondsOrNull()
-                            ?: return SyncResult.PermanentFailure("Message backend returned invalid createdAt data"))
-                    }
+                    val mapped =
+                        page.messages.map { remoteMessage ->
+                            remoteMessage to
+                                (remoteMessage.createdAt.toEpochMillisecondsOrNull()
+                                    ?: return SyncResult.PermanentFailure(
+                                        "Message backend returned invalid createdAt data",
+                                    ))
+                        }
                     database.transaction {
                         mapped.forEach { (message, timeline) ->
                             database.messagesQueries.insertRemoteIfAbsent(

@@ -35,9 +35,13 @@ class MessageSynchronizationEngineTest {
     fun `paginated pull saves cursor and reconciles duplicate remote delivery`() = runTest {
         synchronizationFixture().use { fixture ->
             fixture.remote.pages[null] =
-                RemoteResult.Success(RemoteMessagePage(listOf(remoteMessage("remote-1", "first")), "page-2"))
+                RemoteResult.Success(
+                    RemoteMessagePage(listOf(remoteMessage("remote-1", "first")), "page-2"),
+                )
             fixture.remote.pages["page-2"] =
-                RemoteResult.Success(RemoteMessagePage(listOf(remoteMessage("remote-1", "updated")), null))
+                RemoteResult.Success(
+                    RemoteMessagePage(listOf(remoteMessage("remote-1", "updated")), null),
+                )
 
             assertEquals(SyncResult.Success, fixture.engine.synchronize())
 
@@ -52,14 +56,18 @@ class MessageSynchronizationEngineTest {
     fun `failed later page resumes from durable cursor`() = runTest {
         synchronizationFixture().use { fixture ->
             fixture.remote.pages[null] =
-                RemoteResult.Success(RemoteMessagePage(listOf(remoteMessage("remote-1", "first")), "page-2"))
+                RemoteResult.Success(
+                    RemoteMessagePage(listOf(remoteMessage("remote-1", "first")), "page-2"),
+                )
             fixture.remote.pages["page-2"] = RemoteResult.Failure(AppFailure.Connectivity("offline"))
 
             assertIs<SyncResult.Retry>(fixture.engine.synchronize())
             assertEquals("page-2", fixture.database.messagesQueries.getSyncMetadata().executeAsOne().pull_cursor)
 
             fixture.remote.pages["page-2"] =
-                RemoteResult.Success(RemoteMessagePage(listOf(remoteMessage("remote-2", "second")), null))
+                RemoteResult.Success(
+                    RemoteMessagePage(listOf(remoteMessage("remote-2", "second")), null),
+                )
             assertEquals(SyncResult.Success, fixture.engine.synchronize())
 
             assertEquals(listOf(null, "page-2", "page-2"), fixture.remote.requestedCursors)
