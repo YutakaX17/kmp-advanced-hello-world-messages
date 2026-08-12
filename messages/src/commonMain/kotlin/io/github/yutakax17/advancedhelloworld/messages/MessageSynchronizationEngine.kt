@@ -54,32 +54,42 @@ public class MessageSynchronizationEngine(
                         database.messagesQueries.deleteOutboxOperation(operation.operation_id)
                     }
                 }
-                is RemoteResult.Failure ->
+                is RemoteResult.Failure -> {
                     return handleFailure(
                         operation.operation_id,
                         operation.entity_local_id,
                         operation.attempt_count,
                         result.failure,
                     )
+                }
             }
         }
         return SyncResult.Success
     }
 
     private suspend fun pullRemoteMessages(): SyncResult {
-        var cursor = database.messagesQueries.getSyncMetadata().executeAsOneOrNull()?.pull_cursor
+        var cursor =
+            database.messagesQueries
+                .getSyncMetadata()
+                .executeAsOneOrNull()
+                ?.pull_cursor
         do {
             when (val result = remote.listMessages(cursor)) {
-                is RemoteResult.Failure -> return result.failure.toSyncResult()
+                is RemoteResult.Failure -> {
+                    return result.failure.toSyncResult()
+                }
+
                 is RemoteResult.Success -> {
                     val page = result.value
                     val mapped =
                         page.messages.map { remoteMessage ->
                             remoteMessage to
-                                (remoteMessage.createdAt.toEpochMillisecondsOrNull()
-                                    ?: return SyncResult.PermanentFailure(
-                                        "Message backend returned invalid createdAt data",
-                                    ))
+                                (
+                                    remoteMessage.createdAt.toEpochMillisecondsOrNull()
+                                        ?: return SyncResult.PermanentFailure(
+                                            "Message backend returned invalid createdAt data",
+                                        )
+                                )
                         }
                     database.transaction {
                         mapped.forEach { (message, timeline) ->
