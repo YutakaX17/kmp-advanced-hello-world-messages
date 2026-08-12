@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.android.kmp.library)
     alias(libs.plugins.dependency.analysis)
@@ -28,16 +29,35 @@ kotlin {
         commonMain.dependencies {
             api(libs.advanced.hello.world.kmp.core)
             api(libs.kotlinx.coroutines.core)
+            api(libs.kotlinx.serialization.core)
+            api(libs.ktor.client.core)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.json)
             implementation(libs.sqldelight.coroutines.extensions)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
         }
         jvmTest.dependencies {
             implementation(kotlin("test-junit"))
+            implementation(libs.ktor.http)
+            implementation(libs.ktor.serialization)
             implementation(libs.sqldelight.sqlite.driver)
+        }
+        jvmMain.dependencies {
+            implementation(libs.ktor.http)
+            implementation(libs.ktor.utils)
+        }
+        androidMain.dependencies {
+            implementation(libs.ktor.http)
+            implementation(libs.ktor.utils)
+        }
+        getByName("androidHostTest").dependencies {
+            implementation(libs.ktor.http)
+            implementation(libs.ktor.serialization)
         }
     }
 }
