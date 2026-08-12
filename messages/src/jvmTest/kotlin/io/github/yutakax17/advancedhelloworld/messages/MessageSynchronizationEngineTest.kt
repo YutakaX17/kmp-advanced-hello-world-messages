@@ -6,6 +6,7 @@ import io.github.yutakax17.advancedhelloworld.core.Clock
 import io.github.yutakax17.advancedhelloworld.core.SyncResult
 import io.github.yutakax17.advancedhelloworld.core.UuidGenerator
 import io.github.yutakax17.advancedhelloworld.messages.database.MessagesDatabase
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
@@ -13,22 +14,34 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MessageSynchronizationEngineTest {
     @Test
     fun `offline upload retries with the same durable idempotency key then succeeds`() =
         runTest {
             synchronizationFixture().use { fixture ->
-            fixture.repository.createOffline("recover me")
-            fixture.remote.createResults += RemoteResult.Failure(AppFailure.Connectivity("offline"))
-            fixture.remote.createResults += RemoteResult.Success(remoteMessage("remote-1", "recover me"))
+                fixture.repository.createOffline("recover me")
+                fixture.remote.createResults += RemoteResult.Failure(AppFailure.Connectivity("offline"))
+                fixture.remote.createResults += RemoteResult.Success(remoteMessage("remote-1", "recover me"))
 
-            assertIs<SyncResult.Retry>(fixture.engine.synchronize())
-            fixture.now = 10_000L
-            assertEquals(SyncResult.Success, fixture.engine.synchronize())
+                assertIs<SyncResult.Retry>(fixture.engine.synchronize())
+                fixture.now = 10_000L
+                assertEquals(SyncResult.Success, fixture.engine.synchronize())
 
-            assertEquals(listOf("operation-id", "operation-id"), fixture.remote.idempotencyKeys)
-            assertEquals(0L, fixture.database.messagesQueries.countOutbox().executeAsOne())
-            assertEquals(MessageSyncState.SYNCED, fixture.repository.listLocal().single().syncState)
+                assertEquals(listOf("operation-id", "operation-id"), fixture.remote.idempotencyKeys)
+                assertEquals(
+                    0L,
+                    fixture.database.messagesQueries
+                        .countOutbox()
+                        .executeAsOne(),
+                )
+                assertEquals(
+                    MessageSyncState.SYNCED,
+                    fixture.repository
+                        .listLocal()
+                        .single()
+                        .syncState,
+                )
             }
         }
 
@@ -36,21 +49,38 @@ class MessageSynchronizationEngineTest {
     fun `paginated pull saves cursor and reconciles duplicate remote delivery`() =
         runTest {
             synchronizationFixture().use { fixture ->
-            fixture.remote.pages[null] =
-                RemoteResult.Success(
-                    RemoteMessagePage(listOf(remoteMessage("remote-1", "first")), "page-2"),
-                )
-            fixture.remote.pages["page-2"] =
-                RemoteResult.Success(
-                    RemoteMessagePage(listOf(remoteMessage("remote-1", "updated")), null),
-                )
+                fixture.remote.pages[null] =
+                    RemoteResult.Success(
+                        RemoteMessagePage(listOf(remoteMessage("remote-1", "first")), "page-2"),
+                    )
+                fixture.remote.pages["page-2"] =
+                    RemoteResult.Success(
+                        RemoteMessagePage(listOf(remoteMessage("remote-1", "updated")), null),
+                    )
 
-            assertEquals(SyncResult.Success, fixture.engine.synchronize())
+                assertEquals(SyncResult.Success, fixture.engine.synchronize())
 
-            assertEquals(listOf(null, "page-2"), fixture.remote.requestedCursors)
-            assertEquals(1L, fixture.database.messagesQueries.countMessages().executeAsOne())
-            assertEquals("updated", fixture.repository.listLocal().single().text)
-            assertEquals(null, fixture.database.messagesQueries.getSyncMetadata().executeAsOne().pull_cursor)
+                assertEquals(listOf(null, "page-2"), fixture.remote.requestedCursors)
+                assertEquals(
+                    1L,
+                    fixture.database.messagesQueries
+                        .countMessages()
+                        .executeAsOne(),
+                )
+                assertEquals(
+                    "updated",
+                    fixture.repository
+                        .listLocal()
+                        .single()
+                        .text,
+                )
+                assertEquals(
+                    null,
+                    fixture.database.messagesQueries
+                        .getSyncMetadata()
+                        .executeAsOne()
+                        .pull_cursor,
+                )
             }
         }
 
@@ -58,23 +88,34 @@ class MessageSynchronizationEngineTest {
     fun `failed later page resumes from durable cursor`() =
         runTest {
             synchronizationFixture().use { fixture ->
-            fixture.remote.pages[null] =
-                RemoteResult.Success(
-                    RemoteMessagePage(listOf(remoteMessage("remote-1", "first")), "page-2"),
+                fixture.remote.pages[null] =
+                    RemoteResult.Success(
+                        RemoteMessagePage(listOf(remoteMessage("remote-1", "first")), "page-2"),
+                    )
+                fixture.remote.pages["page-2"] = RemoteResult.Failure(AppFailure.Connectivity("offline"))
+
+                assertIs<SyncResult.Retry>(fixture.engine.synchronize())
+                assertEquals(
+                    "page-2",
+                    fixture.database.messagesQueries
+                        .getSyncMetadata()
+                        .executeAsOne()
+                        .pull_cursor,
                 )
-            fixture.remote.pages["page-2"] = RemoteResult.Failure(AppFailure.Connectivity("offline"))
 
-            assertIs<SyncResult.Retry>(fixture.engine.synchronize())
-            assertEquals("page-2", fixture.database.messagesQueries.getSyncMetadata().executeAsOne().pull_cursor)
+                fixture.remote.pages["page-2"] =
+                    RemoteResult.Success(
+                        RemoteMessagePage(listOf(remoteMessage("remote-2", "second")), null),
+                    )
+                assertEquals(SyncResult.Success, fixture.engine.synchronize())
 
-            fixture.remote.pages["page-2"] =
-                RemoteResult.Success(
-                    RemoteMessagePage(listOf(remoteMessage("remote-2", "second")), null),
+                assertEquals(listOf(null, "page-2", "page-2"), fixture.remote.requestedCursors)
+                assertEquals(
+                    2L,
+                    fixture.database.messagesQueries
+                        .countMessages()
+                        .executeAsOne(),
                 )
-            assertEquals(SyncResult.Success, fixture.engine.synchronize())
-
-            assertEquals(listOf(null, "page-2", "page-2"), fixture.remote.requestedCursors)
-            assertEquals(2L, fixture.database.messagesQueries.countMessages().executeAsOne())
             }
         }
 
@@ -82,14 +123,25 @@ class MessageSynchronizationEngineTest {
     fun `permanent upload failure marks message failed and removes outbox operation`() =
         runTest {
             synchronizationFixture().use { fixture ->
-            fixture.repository.createOffline("invalid remotely")
-            fixture.remote.createResults +=
-                RemoteResult.Failure(AppFailure.Remote(400, "Text was rejected"))
+                fixture.repository.createOffline("invalid remotely")
+                fixture.remote.createResults +=
+                    RemoteResult.Failure(AppFailure.Remote(400, "Text was rejected"))
 
-            assertIs<SyncResult.PermanentFailure>(fixture.engine.synchronize())
+                assertIs<SyncResult.PermanentFailure>(fixture.engine.synchronize())
 
-            assertEquals(MessageSyncState.FAILED_PERMANENT, fixture.repository.listLocal().single().syncState)
-            assertEquals(0L, fixture.database.messagesQueries.countOutbox().executeAsOne())
+                assertEquals(
+                    MessageSyncState.FAILED_PERMANENT,
+                    fixture.repository
+                        .listLocal()
+                        .single()
+                        .syncState,
+                )
+                assertEquals(
+                    0L,
+                    fixture.database.messagesQueries
+                        .countOutbox()
+                        .executeAsOne(),
+                )
             }
         }
 }
@@ -137,6 +189,7 @@ private class SynchronizationFixture(
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 private fun synchronizationFixture(): SynchronizationFixture {
     val path = Files.createTempFile("message-sync-", ".db")
     val driver = JdbcSqliteDriver("jdbc:sqlite:$path")
@@ -154,5 +207,7 @@ private fun synchronizationFixture(): SynchronizationFixture {
     return SynchronizationFixture(path, driver, database, FakeMessageRemoteDataSource(), repository, now)
 }
 
-private fun remoteMessage(id: String, text: String): RemoteMessage =
-    RemoteMessage(id = id, text = text, createdAt = "2026-08-12T08:00:00Z")
+private fun remoteMessage(
+    id: String,
+    text: String,
+): RemoteMessage = RemoteMessage(id = id, text = text, createdAt = "2026-08-12T08:00:00Z")

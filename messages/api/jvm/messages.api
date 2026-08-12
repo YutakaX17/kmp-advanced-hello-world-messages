@@ -23,6 +23,44 @@ public final class io/github/yutakax17/advancedhelloworld/messages/CreateMessage
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class io/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage {
+	public static final field Companion Lio/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lio/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage;
+	public static synthetic fun copy$default (Lio/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage;Ljava/lang/String;ILjava/lang/Object;)Lio/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/yutakax17/advancedhelloworld/messages/KtorMessageRemoteDataSource : io/github/yutakax17/advancedhelloworld/messages/MessageRemoteDataSource {
+	public static final field Companion Lio/github/yutakax17/advancedhelloworld/messages/KtorMessageRemoteDataSource$Companion;
+	public static final field IDEMPOTENCY_KEY_HEADER Ljava/lang/String;
+	public fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;)V
+	public fun createMessage (Lio/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun listMessages (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/yutakax17/advancedhelloworld/messages/KtorMessageRemoteDataSource$Companion {
+}
+
 public final class io/github/yutakax17/advancedhelloworld/messages/Message {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;Lio/github/yutakax17/advancedhelloworld/messages/MessageSyncState;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -49,6 +87,11 @@ public final class io/github/yutakax17/advancedhelloworld/messages/MessageKt {
 	public static final fun validateMessageText (Ljava/lang/String;)Lio/github/yutakax17/advancedhelloworld/messages/MessageValidation;
 }
 
+public abstract interface class io/github/yutakax17/advancedhelloworld/messages/MessageRemoteDataSource {
+	public abstract fun createMessage (Lio/github/yutakax17/advancedhelloworld/messages/CreateRemoteMessage;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun listMessages (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public abstract interface class io/github/yutakax17/advancedhelloworld/messages/MessageRepository {
 	public abstract fun createOffline (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun getSyncContributor ()Lio/github/yutakax17/advancedhelloworld/core/SyncContributor;
@@ -64,6 +107,16 @@ public final class io/github/yutakax17/advancedhelloworld/messages/MessageSyncSt
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lio/github/yutakax17/advancedhelloworld/messages/MessageSyncState;
 	public static fun values ()[Lio/github/yutakax17/advancedhelloworld/messages/MessageSyncState;
+}
+
+public final class io/github/yutakax17/advancedhelloworld/messages/MessageSynchronizationEngine : io/github/yutakax17/advancedhelloworld/core/SyncContributor {
+	public fun <init> (Lio/github/yutakax17/advancedhelloworld/messages/database/MessagesDatabase;Lio/github/yutakax17/advancedhelloworld/messages/MessageRemoteDataSource;Lio/github/yutakax17/advancedhelloworld/core/Clock;Lio/github/yutakax17/advancedhelloworld/core/UuidGenerator;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Lio/github/yutakax17/advancedhelloworld/messages/database/MessagesDatabase;Lio/github/yutakax17/advancedhelloworld/messages/MessageRemoteDataSource;Lio/github/yutakax17/advancedhelloworld/core/Clock;Lio/github/yutakax17/advancedhelloworld/core/UuidGenerator;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun synchronize (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/yutakax17/advancedhelloworld/messages/MessageSynchronizationEngineKt {
+	public static final fun defaultRetryDelayMilliseconds (J)J
 }
 
 public abstract interface class io/github/yutakax17/advancedhelloworld/messages/MessageValidation {
@@ -94,6 +147,75 @@ public final class io/github/yutakax17/advancedhelloworld/messages/MessageValida
 	public static synthetic fun copy$default (Lio/github/yutakax17/advancedhelloworld/messages/MessageValidation$Valid;Ljava/lang/String;ILjava/lang/Object;)Lio/github/yutakax17/advancedhelloworld/messages/MessageValidation$Valid;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getNormalizedText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yutakax17/advancedhelloworld/messages/RemoteMessage {
+	public static final field Companion Lio/github/yutakax17/advancedhelloworld/messages/RemoteMessage$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/github/yutakax17/advancedhelloworld/messages/RemoteMessage;
+	public static synthetic fun copy$default (Lio/github/yutakax17/advancedhelloworld/messages/RemoteMessage;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/yutakax17/advancedhelloworld/messages/RemoteMessage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCreatedAt ()Ljava/lang/String;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class io/github/yutakax17/advancedhelloworld/messages/RemoteMessage$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lio/github/yutakax17/advancedhelloworld/messages/RemoteMessage$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lio/github/yutakax17/advancedhelloworld/messages/RemoteMessage;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lio/github/yutakax17/advancedhelloworld/messages/RemoteMessage;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/yutakax17/advancedhelloworld/messages/RemoteMessage$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class io/github/yutakax17/advancedhelloworld/messages/RemoteMessagePage {
+	public fun <init> (Ljava/util/List;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;)Lio/github/yutakax17/advancedhelloworld/messages/RemoteMessagePage;
+	public static synthetic fun copy$default (Lio/github/yutakax17/advancedhelloworld/messages/RemoteMessagePage;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lio/github/yutakax17/advancedhelloworld/messages/RemoteMessagePage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMessages ()Ljava/util/List;
+	public final fun getNextCursor ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/yutakax17/advancedhelloworld/messages/RemoteResult {
+}
+
+public final class io/github/yutakax17/advancedhelloworld/messages/RemoteResult$Failure : io/github/yutakax17/advancedhelloworld/messages/RemoteResult {
+	public fun <init> (Lio/github/yutakax17/advancedhelloworld/core/AppFailure;)V
+	public final fun component1 ()Lio/github/yutakax17/advancedhelloworld/core/AppFailure;
+	public final fun copy (Lio/github/yutakax17/advancedhelloworld/core/AppFailure;)Lio/github/yutakax17/advancedhelloworld/messages/RemoteResult$Failure;
+	public static synthetic fun copy$default (Lio/github/yutakax17/advancedhelloworld/messages/RemoteResult$Failure;Lio/github/yutakax17/advancedhelloworld/core/AppFailure;ILjava/lang/Object;)Lio/github/yutakax17/advancedhelloworld/messages/RemoteResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFailure ()Lio/github/yutakax17/advancedhelloworld/core/AppFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yutakax17/advancedhelloworld/messages/RemoteResult$Success : io/github/yutakax17/advancedhelloworld/messages/RemoteResult {
+	public fun <init> (Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;)Lio/github/yutakax17/advancedhelloworld/messages/RemoteResult$Success;
+	public static synthetic fun copy$default (Lio/github/yutakax17/advancedhelloworld/messages/RemoteResult$Success;Ljava/lang/Object;ILjava/lang/Object;)Lio/github/yutakax17/advancedhelloworld/messages/RemoteResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()Ljava/lang/Object;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -194,6 +316,7 @@ public final class io/github/yutakax17/advancedhelloworld/messages/database/Mess
 	public final fun getSyncMetadata (Lkotlin/jvm/functions/Function3;)Lapp/cash/sqldelight/Query;
 	public final fun insertPending (Ljava/lang/String;Ljava/lang/String;JJ)Lapp/cash/sqldelight/db/QueryResult;
 	public final fun insertRemoteIfAbsent (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;J)Lapp/cash/sqldelight/db/QueryResult;
+	public final fun markPending (Ljava/lang/String;Ljava/lang/String;)Lapp/cash/sqldelight/db/QueryResult;
 	public final fun markPermanentFailure (Ljava/lang/String;Ljava/lang/String;)Lapp/cash/sqldelight/db/QueryResult;
 	public final fun markSynced (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;)Lapp/cash/sqldelight/db/QueryResult;
 	public final fun markSyncing (Ljava/lang/String;)Lapp/cash/sqldelight/db/QueryResult;
@@ -201,6 +324,8 @@ public final class io/github/yutakax17/advancedhelloworld/messages/database/Mess
 	public final fun saveCursor (Ljava/lang/String;Ljava/lang/Long;)Lapp/cash/sqldelight/db/QueryResult;
 	public final fun selectAll ()Lapp/cash/sqldelight/Query;
 	public final fun selectAll (Lkotlin/jvm/functions/Function9;)Lapp/cash/sqldelight/Query;
+	public final fun selectMessageByLocalId (Ljava/lang/String;)Lapp/cash/sqldelight/Query;
+	public final fun selectMessageByLocalId (Ljava/lang/String;Lkotlin/jvm/functions/Function9;)Lapp/cash/sqldelight/Query;
 	public final fun selectReadyOutbox (Ljava/lang/Long;)Lapp/cash/sqldelight/Query;
 	public final fun selectReadyOutbox (Ljava/lang/Long;Lkotlin/jvm/functions/Function8;)Lapp/cash/sqldelight/Query;
 	public final fun updateRemote (Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;)Lapp/cash/sqldelight/db/QueryResult;

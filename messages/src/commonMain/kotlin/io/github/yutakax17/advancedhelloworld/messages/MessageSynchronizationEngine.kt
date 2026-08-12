@@ -22,6 +22,7 @@ public class MessageSynchronizationEngine(
         return pullRemoteMessages()
     }
 
+    @Suppress("ReturnCount")
     private suspend fun pushReadyOutbox(): SyncResult {
         val now = clock.nowEpochMilliseconds()
         val operations = database.messagesQueries.selectReadyOutbox(now).executeAsList()
@@ -54,6 +55,7 @@ public class MessageSynchronizationEngine(
                         database.messagesQueries.deleteOutboxOperation(operation.operation_id)
                     }
                 }
+
                 is RemoteResult.Failure -> {
                     return handleFailure(
                         operation.operation_id,
@@ -67,6 +69,7 @@ public class MessageSynchronizationEngine(
         return SyncResult.Success
     }
 
+    @Suppress("ReturnCount")
     private suspend fun pullRemoteMessages(): SyncResult {
         var cursor =
             database.messagesQueries

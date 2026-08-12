@@ -11,6 +11,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
+import kotlin.coroutines.cancellation.CancellationException
 
 @Serializable
 public data class RemoteMessage(
@@ -77,6 +78,7 @@ public class KtorMessageRemoteDataSource(
             RemoteMessagePage(messages = messages, nextCursor = null)
         }
 
+    @Suppress("SwallowedException", "TooGenericExceptionCaught")
     private suspend fun <T> requestRemote(block: suspend () -> T): RemoteResult<T> =
         try {
             RemoteResult.Success(block())
@@ -86,7 +88,11 @@ public class KtorMessageRemoteDataSource(
             )
         } catch (failure: kotlinx.serialization.SerializationException) {
             RemoteResult.Failure(AppFailure.InvalidData("Message backend returned invalid data"))
+        } catch (failure: CancellationException) {
+            throw failure
         } catch (failure: Throwable) {
+            // Ktor engines expose platform-specific connectivity exceptions. Convert them
+            // at this common boundary after preserving structured HTTP/data failures above.
             RemoteResult.Failure(AppFailure.Connectivity(failure.message ?: "Message backend is unavailable"))
         }
 
